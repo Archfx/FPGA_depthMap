@@ -1,0 +1,16 @@
+.ipynb_checkpoints/
+_xmsgs/
+iseconfig/
+isim/
+
+*.log
+*.xmsgs
+*.html
+*.htm
+*.cmd
+*.ini
+*.exe
+*.xise
+*.gise
+*.wdb
+*.prj
