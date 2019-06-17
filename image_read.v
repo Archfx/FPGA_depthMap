@@ -71,7 +71,9 @@ integer temp0,temp1;//,tempG0,tempG1,tempB0,tempB1; // temporary variables in co
 
 integer value,value1,value2,value4;// temporary variables in invert and threshold operation
 reg [ 9:0] row; // row index of the image
-reg [10:0] col; // column index of the image
+reg [10:0] col_l; // column index of the Left image
+reg [10:0] col_r; // column index of the Right image
+reg disp_found;
 reg [18:0] data_count; // data counting for entire pixels of the image
 //-------------------------------------------------//
 // -------- Reading data from input file ----------//
@@ -90,8 +92,8 @@ always@(start) begin
         
         for(i=0; i<HEIGHT; i=i+1) begin
             for(j=0; j<WIDTH; j=j+1) begin
-                org_L[WIDTH*i+j] = temp_BMP_L[WIDTH*(i)+j]; // save Red component
-                org_R[WIDTH*i+j] = temp_BMP_R[WIDTH*(i)+j];// save Green component
+                org_L[WIDTH*i+j] = temp_BMP_L[WIDTH*(i)+j]; // save Left image
+                org_R[WIDTH*i+j] = temp_BMP_L[WIDTH*(i)+j];// save Right image
 //                org_B[WIDTH*i+j] = temp_BMP[WIDTH*3*(HEIGHT-i-1)+3*j+2];// save Blue component
             end
         end
@@ -156,7 +158,7 @@ always @(*) begin
 			if(ctrl_done)
 				nstate = ST_IDLE;
 			else begin
-				if(col == WIDTH - 2)
+				if(col_l == WIDTH - 2)
 					nstate = ST_HSYNC;
 				else
 					nstate = ST_DATA;
@@ -197,21 +199,31 @@ begin
     end
 end
 // counting column and row index  for reading memory 
-always@(posedge HCLK, negedge HRESETn)
+always@(posedge HCLK, negedge HRESETn,posedge disp_found)
 begin
     if(~HRESETn) begin
         row <= 0;
-		col <= 0;
+		col_l <= 0;
+		col_r <= 0;
+		disp_found <= 0;
     end
 	else begin
 		if(ctrl_data_run) begin
-			if(col == WIDTH - 2) begin
+			if(col_l == WIDTH - 2) begin
 				row <= row + 1;
 			end
-			if(col == WIDTH - 2) 
-				col <= 0;
-			else 
-				col <= col + 2; // reading 2 pixels in parallel
+			if(col_l == WIDTH - 2) begin
+				col_l <= 0;
+				col_r <= 0;
+				end
+			else begin
+				if(disp_found) begin
+					col_l <= col_l + 2; // reading 2 pixels in parallel
+					end
+					else begin
+						col_r <= col_r + 2;
+					end
+				end
 		end
 	end
 end
@@ -245,122 +257,59 @@ always @(*) begin
 	if(ctrl_data_run) begin
 		
 		HSYNC   = 1'b1;
-		`ifdef BRIGHTNESS_OPERATION	
-		/**************************************/		
-		/*		BRIGHTNESS ADDITION OPERATION */
-		/**************************************/
-		if(SIGN == 1) begin
-		// R0
-		temp0 = org[WIDTH * row + col   ] + VALUE;
-		if (temp0 > 255)
-			DATA_0 = 255;
-		else
-			DATA_0 = org[WIDTH * row + col   ] + VALUE;
-		// R1	
-		temp1 = org[WIDTH * row + col+1   ] + VALUE;
-		if (temp1 > 255)
-			DATA_1 = 255;
-		else
-			DATA_1 = org[WIDTH * row + col+1   ] + VALUE;	
-//		// G0	
-//		tempG0 = org_G[WIDTH * row + col   ] + VALUE;
-//		if (tempG0 > 255)
-//			DATA_G0 = 255;
-//		else
-//			DATA_G0 = org_G[WIDTH * row + col   ] + VALUE;
-//		tempG1 = org_G[WIDTH * row + col+1   ] + VALUE;
-//		if (tempG1 > 255)
-//			DATA_G1 = 255;
-//		else
-//			DATA_G1 = org_G[WIDTH * row + col+1   ] + VALUE;		
-//		// B
-//		tempB0 = org_B[WIDTH * row + col   ] + VALUE;
-//		if (tempB0 > 255)
-//			DATA_B0 = 255;
-//		else
-//			DATA_B0 = org_B[WIDTH * row + col   ] + VALUE;
-//		tempB1 = org_B[WIDTH * row + col+1   ] + VALUE;
-//		if (tempB1 > 255)
-//			DATA_B1 = 255;
-//		else
-//			DATA_B1 = org_B[WIDTH * row + col+1   ] + VALUE;
-	end
-	else begin
-	/**************************************/		
-	/*	BRIGHTNESS SUBTRACTION OPERATION */
-	/**************************************/
-		// R0
-		temp0 = org[WIDTH * row + col   ] - VALUE;
-		if (temp0 < 0)
-			DATA_0 = 0;
-		else
-			DATA_0 = org[WIDTH * row + col   ] - VALUE;
-		// R1	
-		temp1 = org[WIDTH * row + col+1   ] - VALUE;
-		if (temp1 < 0)
-			DATA_1 = 0;
-		else
-			DATA_1 = org[WIDTH * row + col+1   ] - VALUE;	
-//		// G0	
-//		tempG0 = org_G[WIDTH * row + col   ] - VALUE;
-//		if (tempG0 < 0)
-//			DATA_G0 = 0;
-//		else
-//			DATA_G0 = org_G[WIDTH * row + col   ] - VALUE;
-//		tempG1 = org_G[WIDTH * row + col+1   ] - VALUE;
-//		if (tempG1 < 0)
-//			DATA_G1 = 0;
-//		else
-//			DATA_G1 = org_G[WIDTH * row + col+1   ] - VALUE;		
-//		// B
-//		tempB0 = org_B[WIDTH * row + col   ] - VALUE;
-//		if (tempB0 < 0)
-//			DATA_B0 = 0;
-//		else
-//			DATA_B0 = org_B[WIDTH * row + col   ] - VALUE;
-//		tempB1 = org_B[WIDTH * row + col+1   ] - VALUE;
-//		if (tempB1 < 0)
-//			DATA_B1 = 0;
-//		else
-//			DATA_B1 = org_B[WIDTH * row + col+1   ] - VALUE;
-		end
-		`endif
+
 	
 		/**************************************/		
 		/*		DISPARITY_OPERATION  			  */
 		/**************************************/
-		`ifdef DISPARITY	
-			DATA_0_L=(org_L[WIDTH * row + col  ]+org_R[WIDTH * row + col  ])/2 ;
-			DATA_1_L =(org_L[WIDTH * row + col+1  ]+org_R[WIDTH * row + col+1  ])/2;		
+		`ifdef DISPARITY
+		
+			//if ((org_L[WIDTH * row + col_l  ] - org_R[WIDTH * row + col_r  ])<50 | (org_R[WIDTH * row + col_r  ] - org_L[WIDTH * row + col_l  ])<50 )
+			//1/(col_l-col_r) ;
+			//if ((org_L[WIDTH * row + col_l +1  ] - org_R[WIDTH * row + col_r+1  ])<50 | (org_R[WIDTH * row + col_r+1  ] - org_L[WIDTH * row + col_l +1 ])<50 )
+			//if(col_l==0)	begin
+			//DATA_0_L= org_L[WIDTH * row + col_l  ];
+			//DATA_1_L = org_L[WIDTH * row + col_l+1 ];//1/((col_l+1)-(col_r+1)) ;
+			//end
+			
+			if((org_L[WIDTH * row + col_l  ] == org_R[WIDTH * row + col_r  ])) begin
+			
+				DATA_0_L= org_L[WIDTH * row + col_l  ];
+				DATA_1_L = org_L[WIDTH * row + col_l+1 ];
+				//DATA_0_L= 1/(col_l-col_r);
+				//DATA_1_L = 1/((col_l+1)-(col_r+1));
+				disp_found <= 1;
+				end
+			//disp_found <= 1;
 		`endif
 		/**************************************/		
 		/********THRESHOLD OPERATION  *********/
 		/**************************************/
-		`ifdef THRESHOLD_OPERATION
-
-		value = org[WIDTH * row + col   ];
-		if(value > THRESHOLD) begin
-			DATA_0=255;
-			//DATA_G0=255;
-			//DATA_B0=255;
-		end
-		else begin
-			DATA_0=0;
-			//DATA_G0=0;
-			//DATA_B0=0;
-		end
-		value1 = org[WIDTH * row + col+1   ];
-		if(value1 > THRESHOLD) begin
-			DATA_1=255;
-//			DATA_G1=255;
-//			DATA_B1=255;
-		end
-		else begin
-			DATA_1=0;
-//			DATA_G1=0;
-//			DATA_B1=0;
-		end		
-		`endif
+//		`ifdef THRESHOLD_OPERATION
+//
+//		value = org[WIDTH * row + col   ];
+//		if(value > THRESHOLD) begin
+//			DATA_0=255;
+//			//DATA_G0=255;
+//			//DATA_B0=255;
+//		end
+//		else begin
+//			DATA_0=0;
+//			//DATA_G0=0;
+//			//DATA_B0=0;
+//		end
+//		value1 = org[WIDTH * row + col+1   ];
+//		if(value1 > THRESHOLD) begin
+//			DATA_1=255;
+////			DATA_G1=255;
+////			DATA_B1=255;
+//		end
+//		else begin
+//			DATA_1=0;
+////			DATA_G1=0;
+////			DATA_B1=0;
+//		end		
+//		`endif
 		
 	end
 end
