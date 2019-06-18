@@ -9,5 +9,5 @@
 // Choose the operation of code by delete // in the beginning of the selected line
 
 //`define BRIGHTNESS_OPERATION
-`define DISPARITY
+//`define DISPARITY
 //`define THRESHOLD_OPERATION 
