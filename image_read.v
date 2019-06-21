@@ -70,17 +70,17 @@ integer i, j;
 integer temp0,temp1;//,tempG0,tempG1,tempB0,tempB1; // temporary variables in contrast and brightness operation
 
 integer value,value1,value2,value4;// temporary variables in invert and threshold operation
-reg [ 9:0] row; // row index of the image
-reg [10:0] col; // column index of the Left image
+reg [ 8:0] row; // row index of the image
+reg [8:0] col; // column index of the Left image
 //localparam [1:0] window = 2'b11;
 //reg [10:0] x,y; // column index of the Right image
-reg [3:0] offset, best_offset, best_offset_1;
+reg [4:0] offset, best_offset, best_offset_1;
 localparam [4:0] maxoffset = 10; // Maximum extent where to look for the same pixel
 reg offsetfound;
 reg offsetping;
 reg compare;
-reg [15:0] ssd, ssd_1; // sum of squared difference
-reg [15:0] prev_ssd, prev_ssd_1;
+reg [20:0] ssd, ssd_1; // sum of squared difference
+reg [20:0] prev_ssd, prev_ssd_1;
 reg [18:0] data_count; // data counting for entire pixels of the image
 //-------------------------------------------------//
 // -------- Reading data from input file ----------//
@@ -213,30 +213,28 @@ begin
         row <= 0;
 		  col<= 0;
 		  offset<=4;
-		  offsetfound<=1;
+		  //offsetfound<=1;
 		  offsetping<=0;
+		  compare<=0;
+		  
     end
 	else begin
 		
-		if(ctrl_data_run) begin
+		if(ctrl_data_run & offsetping==0 & compare==0) begin
 			if (offsetfound) begin
 				if(col == WIDTH - 2) begin
 					row <= row + 1;
-					offsetfound<=0;	
-					//$display("row1 %d",row);
+					
 				end
 				if(col == WIDTH - 2) begin
 					col <= 0;
-					offsetfound<=0;
 					
 		
 				end
 				else begin 
 					col <= col + 2; // reading 2 pixels in parallel
-					offsetfound <= 0;
-					
-							//$display("%d",col);
 				end
+				offsetfound <= 0;
 				best_offset <= 0;
 				prev_ssd <= 65535;
 				best_offset_1 <= 0;
@@ -246,22 +244,19 @@ begin
 			end
 			else begin
 				if(offset==maxoffset) begin
-					offset <= 4;
 					offsetfound <= 1;
-					
-					//$display("row %d col %d  offset %d",row,col,offset);
-					//$display("%d",offset);
 				end
-				else begin 
-					offset<=offset+1;
-					//$display("row %d col %d  offset %d",row,col,offset);
+				else begin
+					
+						offset<=offset+1;
+						
+					
+					$display("row %d col %d  offset %d",row,col,offset);
 					
 				end
 				ssd<=0;
 				ssd_1<=0;
 				offsetping<=1;
-			//end
-			//end
 		end
 			
 		
@@ -269,77 +264,69 @@ begin
 end
 end
 always@(posedge offsetping) begin
-//	for(x=-1;x<2;x=x+1)
-//			for(y=-1;y<2;y=y+1)
-//				ssd<=ssd+(org_L[(WIDTH+x) * row + col+y  ]-org_R[(WIDTH+x) * row + col+y-offset])*(org_L[(WIDTH+x) * row + col+y  ]-org_R[(WIDTH+x) * row + col+y-offset]);
-//				ssd_1<=ssd_1+(org_L[(WIDTH+x) * row + col+y +1 ]-org_R[(WIDTH+x) * row + col+y-offset+1])*(org_L[(WIDTH+x) * row + col+y  +1]-org_R[(WIDTH+x) * row + col+y-offset+1]);
-	ssd<=ssd
-	+(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])*(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])
-	+(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])*(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])
-	+(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])*(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])
-	+(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])*(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])
-	+(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])*(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])
-	+(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])*(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])
-	+(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])*(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])
-	+(org_L[(WIDTH+1) * row + col  ]-org_R[(WIDTH+1) * row + col-offset])*(org_L[(WIDTH+1) * row + col  ]-org_R[(WIDTH+1) * row + col-offset])
-	+(org_L[(WIDTH+1) * row + col+1  ]-org_R[(WIDTH+1) * row + col+1-offset])*(org_L[(WIDTH+1) * row + col+1  ]-org_R[(WIDTH+1) * row + col+1-offset])
-	
-	+(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])*(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])
-	+(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])*(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])
-	+(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])*(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])
-	+(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])*(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])
-	+(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])*(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])
-	+(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])*(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])
-	+(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])*(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])
-	+(org_L[(WIDTH+1) * row + col  ]-org_R[(WIDTH+1) * row + col-offset])*(org_L[(WIDTH+1) * row + col  ]-org_R[(WIDTH+1) * row + col-offset])
-	+(org_L[(WIDTH+1) * row + col+1  ]-org_R[(WIDTH+1) * row + col+1-offset])*(org_L[(WIDTH+1) * row + col+1  ]-org_R[(WIDTH+1) * row + col+1-offset])
-	
-	+(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])*(org_L[(WIDTH-1) * row + col-1  ]-org_R[(WIDTH-1) * row + col-1-offset])
-	+(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])*(org_L[(WIDTH-1) * row + col  ]-org_R[(WIDTH-1) * row + col-offset])
-	+(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])*(org_L[(WIDTH-1) * row + col+1  ]-org_R[(WIDTH-1) * row + col+1-offset])
-	+(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])*(org_L[(WIDTH) * row + col-1  ]-org_R[(WIDTH) * row + col-1-offset])
-	+(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])*(org_L[(WIDTH) * row + col  ]-org_R[(WIDTH) * row + col-offset])
-	+(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])*(org_L[(WIDTH) * row + col+1  ]-org_R[(WIDTH) * row + col+1-offset])
-	+(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])*(org_L[(WIDTH+1) * row + col-1  ]-org_R[(WIDTH+1) * row + col-1-offset])
-	;
+
+	ssd<=ssd	 
+	+(org_L[(row + -2 ) * WIDTH + col + -2   ]-org_R[(row + -2 ) * WIDTH + col + -2 -offset])*(org_L[(row +  -2 ) * WIDTH + col + -2   ]-org_R[(row +  -2 ) * WIDTH + col + -2 -offset])
+	+(org_L[(row + -2 ) * WIDTH + col + -1   ]-org_R[(row + -2 ) * WIDTH + col + -1 -offset])*(org_L[(row +  -2 ) * WIDTH + col + -1   ]-org_R[(row +  -2 ) * WIDTH + col + -1 -offset])
+	+(org_L[(row + -2 ) * WIDTH + col + 0   ]-org_R[(row + -2 ) * WIDTH + col + 0 -offset])*(org_L[(row +  -2 ) * WIDTH + col + 0   ]-org_R[(row +  -2 ) * WIDTH + col + 0 -offset])
+	+(org_L[(row + -2 ) * WIDTH + col + 1   ]-org_R[(row + -2 ) * WIDTH + col + 1 -offset])*(org_L[(row +  -2 ) * WIDTH + col + 1   ]-org_R[(row +  -2 ) * WIDTH + col + 1 -offset])
+	+(org_L[(row + -2 ) * WIDTH + col + 2   ]-org_R[(row + -2 ) * WIDTH + col + 2 -offset])*(org_L[(row +  -2 ) * WIDTH + col + 2   ]-org_R[(row +  -2 ) * WIDTH + col + 2 -offset])
+	+(org_L[(row + -1 ) * WIDTH + col + -2   ]-org_R[(row + -1 ) * WIDTH + col + -2 -offset])*(org_L[(row +  -1 ) * WIDTH + col + -2   ]-org_R[(row +  -1 ) * WIDTH + col + -2 -offset])
+	+(org_L[(row + -1 ) * WIDTH + col + -1   ]-org_R[(row + -1 ) * WIDTH + col + -1 -offset])*(org_L[(row +  -1 ) * WIDTH + col + -1   ]-org_R[(row +  -1 ) * WIDTH + col + -1 -offset])
+	+(org_L[(row + -1 ) * WIDTH + col + 0   ]-org_R[(row + -1 ) * WIDTH + col + 0 -offset])*(org_L[(row +  -1 ) * WIDTH + col + 0   ]-org_R[(row +  -1 ) * WIDTH + col + 0 -offset])
+	+(org_L[(row + -1 ) * WIDTH + col + 1   ]-org_R[(row + -1 ) * WIDTH + col + 1 -offset])*(org_L[(row +  -1 ) * WIDTH + col + 1   ]-org_R[(row +  -1 ) * WIDTH + col + 1 -offset])
+	+(org_L[(row + -1 ) * WIDTH + col + 2   ]-org_R[(row + -1 ) * WIDTH + col + 2 -offset])*(org_L[(row +  -1 ) * WIDTH + col + 2   ]-org_R[(row +  -1 ) * WIDTH + col + 2 -offset])
+	+(org_L[(row + 0 ) * WIDTH + col + -2   ]-org_R[(row + 0 ) * WIDTH + col + -2 -offset])*(org_L[(row +  0 ) * WIDTH + col + -2   ]-org_R[(row +  0 ) * WIDTH + col + -2 -offset])
+	+(org_L[(row + 0 ) * WIDTH + col + -1   ]-org_R[(row + 0 ) * WIDTH + col + -1 -offset])*(org_L[(row +  0 ) * WIDTH + col + -1   ]-org_R[(row +  0 ) * WIDTH + col + -1 -offset])
+	+(org_L[(row + 0 ) * WIDTH + col + 0   ]-org_R[(row + 0 ) * WIDTH + col + 0 -offset])*(org_L[(row +  0 ) * WIDTH + col + 0   ]-org_R[(row +  0 ) * WIDTH + col + 0 -offset])
+	+(org_L[(row + 0 ) * WIDTH + col + 1   ]-org_R[(row + 0 ) * WIDTH + col + 1 -offset])*(org_L[(row +  0 ) * WIDTH + col + 1   ]-org_R[(row +  0 ) * WIDTH + col + 1 -offset])
+	+(org_L[(row + 0 ) * WIDTH + col + 2   ]-org_R[(row + 0 ) * WIDTH + col + 2 -offset])*(org_L[(row +  0 ) * WIDTH + col + 2   ]-org_R[(row +  0 ) * WIDTH + col + 2 -offset])
+	+(org_L[(row + 1 ) * WIDTH + col + -2   ]-org_R[(row + 1 ) * WIDTH + col + -2 -offset])*(org_L[(row +  1 ) * WIDTH + col + -2   ]-org_R[(row +  1 ) * WIDTH + col + -2 -offset])
+	+(org_L[(row + 1 ) * WIDTH + col + -1   ]-org_R[(row + 1 ) * WIDTH + col + -1 -offset])*(org_L[(row +  1 ) * WIDTH + col + -1   ]-org_R[(row +  1 ) * WIDTH + col + -1 -offset])
+	+(org_L[(row + 1 ) * WIDTH + col + 0   ]-org_R[(row + 1 ) * WIDTH + col + 0 -offset])*(org_L[(row +  1 ) * WIDTH + col + 0   ]-org_R[(row +  1 ) * WIDTH + col + 0 -offset])
+	+(org_L[(row + 1 ) * WIDTH + col + 1   ]-org_R[(row + 1 ) * WIDTH + col + 1 -offset])*(org_L[(row +  1 ) * WIDTH + col + 1   ]-org_R[(row +  1 ) * WIDTH + col + 1 -offset])
+	+(org_L[(row + 1 ) * WIDTH + col + 2   ]-org_R[(row + 1 ) * WIDTH + col + 2 -offset])*(org_L[(row +  1 ) * WIDTH + col + 2   ]-org_R[(row +  1 ) * WIDTH + col + 2 -offset])
+	+(org_L[(row + 2 ) * WIDTH + col + -2   ]-org_R[(row + 2 ) * WIDTH + col + -2 -offset])*(org_L[(row +  2 ) * WIDTH + col + -2   ]-org_R[(row +  2 ) * WIDTH + col + -2 -offset])
+	+(org_L[(row + 2 ) * WIDTH + col + -1   ]-org_R[(row + 2 ) * WIDTH + col + -1 -offset])*(org_L[(row +  2 ) * WIDTH + col + -1   ]-org_R[(row +  2 ) * WIDTH + col + -1 -offset])
+	+(org_L[(row + 2 ) * WIDTH + col + 0   ]-org_R[(row + 2 ) * WIDTH + col + 0 -offset])*(org_L[(row +  2 ) * WIDTH + col + 0   ]-org_R[(row +  2 ) * WIDTH + col + 0 -offset])
+	+(org_L[(row + 2 ) * WIDTH + col + 1   ]-org_R[(row + 2 ) * WIDTH + col + 1 -offset])*(org_L[(row +  2 ) * WIDTH + col + 1   ]-org_R[(row +  2 ) * WIDTH + col + 1 -offset])
+	+(org_L[(row + 2 ) * WIDTH + col + 2   ]-org_R[(row + 2 ) * WIDTH + col + 2 -offset])*(org_L[(row +  2 ) * WIDTH + col + 2   ]-org_R[(row +  2 ) * WIDTH + col + 2 -offset]);
 	
 	ssd_1<=ssd_1
-	+(org_L[(WIDTH-1) * row + col-1 +1 ]-org_R[(WIDTH-1) * row + col-1-offset+1])*(org_L[(WIDTH-1) * row + col-1  +1]-org_R[(WIDTH-1) * row + col-1-offset+1])
-	+(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])*(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])
-	+(org_L[(WIDTH-1) * row + col+1  +1]-org_R[(WIDTH-1) * row + col+1-offset+1])*(org_L[(WIDTH-1) * row + col+1 +1 ]-org_R[(WIDTH-1) * row + col+1-offset+1])
-	+(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])*(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])
-	+(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])*(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])
-	+(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])*(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])
-	+(org_L[(WIDTH+1) * row + col-1  +1]-org_R[(WIDTH+1) * row + col-1-offset+1])*(org_L[(WIDTH+1) * row + col-1 +1 ]-org_R[(WIDTH+1) * row + col-1-offset+1])
-	+(org_L[(WIDTH+1) * row + col  +1]-org_R[(WIDTH+1) * row + col-offset+1])*(org_L[(WIDTH+1) * row + col  +1]-org_R[(WIDTH+1) * row + col-offset+1])
-	+(org_L[(WIDTH+1) * row + col+1  +1]-org_R[(WIDTH+1) * row + col+1-offset+1])*(org_L[(WIDTH+1) * row + col+1 +1 ]-org_R[(WIDTH+1) * row + col+1-offset+1])
-	
-	+(org_L[(WIDTH-1) * row + col-1 +1 ]-org_R[(WIDTH-1) * row + col-1-offset+1])*(org_L[(WIDTH-1) * row + col-1  +1]-org_R[(WIDTH-1) * row + col-1-offset+1])
-	+(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])*(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])
-	+(org_L[(WIDTH-1) * row + col+1  +1]-org_R[(WIDTH-1) * row + col+1-offset+1])*(org_L[(WIDTH-1) * row + col+1 +1 ]-org_R[(WIDTH-1) * row + col+1-offset+1])
-	+(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])*(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])
-	+(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])*(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])
-	+(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])*(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])
-	+(org_L[(WIDTH+1) * row + col-1  +1]-org_R[(WIDTH+1) * row + col-1-offset+1])*(org_L[(WIDTH+1) * row + col-1 +1 ]-org_R[(WIDTH+1) * row + col-1-offset+1])
-	+(org_L[(WIDTH+1) * row + col  +1]-org_R[(WIDTH+1) * row + col-offset+1])*(org_L[(WIDTH+1) * row + col  +1]-org_R[(WIDTH+1) * row + col-offset+1])
-	+(org_L[(WIDTH+1) * row + col+1  +1]-org_R[(WIDTH+1) * row + col+1-offset+1])*(org_L[(WIDTH+1) * row + col+1 +1 ]-org_R[(WIDTH+1) * row + col+1-offset+1])
-	
-	+(org_L[(WIDTH-1) * row + col-1 +1 ]-org_R[(WIDTH-1) * row + col-1-offset+1])*(org_L[(WIDTH-1) * row + col-1  +1]-org_R[(WIDTH-1) * row + col-1-offset+1])
-	+(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])*(org_L[(WIDTH-1) * row + col  +1]-org_R[(WIDTH-1) * row + col-offset+1])
-	+(org_L[(WIDTH-1) * row + col+1  +1]-org_R[(WIDTH-1) * row + col+1-offset+1])*(org_L[(WIDTH-1) * row + col+1 +1 ]-org_R[(WIDTH-1) * row + col+1-offset+1])
-	+(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])*(org_L[(WIDTH) * row + col-1  +1]-org_R[(WIDTH) * row + col-1-offset+1])
-	+(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])*(org_L[(WIDTH) * row + col  +1]-org_R[(WIDTH) * row + col-offset+1])
-	+(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])*(org_L[(WIDTH) * row + col+1  +1]-org_R[(WIDTH) * row + col+1-offset+1])
-	+(org_L[(WIDTH+1) * row + col-1  +1]-org_R[(WIDTH+1) * row + col-1-offset+1])*(org_L[(WIDTH+1) * row + col-1 +1 ]-org_R[(WIDTH+1) * row + col-1-offset+1]);
+	+(org_L[(row + -2 ) * WIDTH + col + -2  + 1 ]-org_R[(row + -2 ) * WIDTH + col + -2  - offset + 1 ])*(org_L[(row +  -2 ) * WIDTH + col + -2  + 1  ]-org_R[(row +  -2 ) * WIDTH + col + -2  - offset + 1])
+	+(org_L[(row + -2 ) * WIDTH + col + -1  + 1 ]-org_R[(row + -2 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  -2 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  -2 ) * WIDTH + col + -1  - offset + 1])
+	+(org_L[(row + -2 ) * WIDTH + col + 0  + 1 ]-org_R[(row + -2 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  -2 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  -2 ) * WIDTH + col + 0  - offset + 1])
+	+(org_L[(row + -2 ) * WIDTH + col + 1  + 1 ]-org_R[(row + -2 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  -2 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  -2 ) * WIDTH + col + 1  - offset + 1])
+	+(org_L[(row + -2 ) * WIDTH + col + 2  + 1 ]-org_R[(row + -2 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  -2 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  -2 ) * WIDTH + col + 2  - offset + 1])
+	+(org_L[(row + -1 ) * WIDTH + col + -2  + 1 ]-org_R[(row + -1 ) * WIDTH + col + -2  - offset + 1 ])*(org_L[(row +  -1 ) * WIDTH + col + -2  + 1  ]-org_R[(row +  -1 ) * WIDTH + col + -2  - offset + 1])
+	+(org_L[(row + -1 ) * WIDTH + col + -1  + 1 ]-org_R[(row + -1 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  -1 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  -1 ) * WIDTH + col + -1  - offset + 1])
+	+(org_L[(row + -1 ) * WIDTH + col + 0  + 1 ]-org_R[(row + -1 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  -1 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  -1 ) * WIDTH + col + 0  - offset + 1])
+	+(org_L[(row + -1 ) * WIDTH + col + 1  + 1 ]-org_R[(row + -1 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  -1 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  -1 ) * WIDTH + col + 1  - offset + 1])
+	+(org_L[(row + -1 ) * WIDTH + col + 2  + 1 ]-org_R[(row + -1 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  -1 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  -1 ) * WIDTH + col + 2  - offset + 1])
+	+(org_L[(row + 0 ) * WIDTH + col + -2  + 1 ]-org_R[(row + 0 ) * WIDTH + col + -2  - offset + 1 ])*(org_L[(row +  0 ) * WIDTH + col + -2  + 1  ]-org_R[(row +  0 ) * WIDTH + col + -2  - offset + 1])
+	+(org_L[(row + 0 ) * WIDTH + col + -1  + 1 ]-org_R[(row + 0 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  0 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  0 ) * WIDTH + col + -1  - offset + 1])
+	+(org_L[(row + 0 ) * WIDTH + col + 0  + 1 ]-org_R[(row + 0 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  0 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  0 ) * WIDTH + col + 0  - offset + 1])
+	+(org_L[(row + 0 ) * WIDTH + col + 1  + 1 ]-org_R[(row + 0 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  0 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  0 ) * WIDTH + col + 1  - offset + 1])
+	+(org_L[(row + 0 ) * WIDTH + col + 2  + 1 ]-org_R[(row + 0 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  0 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  0 ) * WIDTH + col + 2  - offset + 1])
+	+(org_L[(row + 1 ) * WIDTH + col + -2  + 1 ]-org_R[(row + 1 ) * WIDTH + col + -2  - offset + 1 ])*(org_L[(row +  1 ) * WIDTH + col + -2  + 1  ]-org_R[(row +  1 ) * WIDTH + col + -2  - offset + 1])
+	+(org_L[(row + 1 ) * WIDTH + col + -1  + 1 ]-org_R[(row + 1 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  1 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  1 ) * WIDTH + col + -1  - offset + 1])
+	+(org_L[(row + 1 ) * WIDTH + col + 0  + 1 ]-org_R[(row + 1 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  1 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  1 ) * WIDTH + col + 0  - offset + 1])
+	+(org_L[(row + 1 ) * WIDTH + col + 1  + 1 ]-org_R[(row + 1 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  1 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  1 ) * WIDTH + col + 1  - offset + 1])
+	+(org_L[(row + 1 ) * WIDTH + col + 2  + 1 ]-org_R[(row + 1 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  1 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  1 ) * WIDTH + col + 2  - offset + 1])
+	+(org_L[(row + 2 ) * WIDTH + col + -2  + 1 ]-org_R[(row + 2 ) * WIDTH + col + -2  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + -2  + 1  ]-org_R[(row +  2 ) * WIDTH + col + -2  - offset + 1])
+	+(org_L[(row + 2 ) * WIDTH + col + -1  + 1 ]-org_R[(row + 2 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  2 ) * WIDTH + col + -1  - offset + 1])
+	+(org_L[(row + 2 ) * WIDTH + col + 0  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 0  - offset + 1])
+	+(org_L[(row + 2 ) * WIDTH + col + 1  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 1  - offset + 1])
+	+(org_L[(row + 2 ) * WIDTH + col + 2  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 2  - offset + 1]);
 	compare<=1;
 end
 
-always @(posedge compare) begin		
-	//$display("best offset %d  prev offset 1 %d",ssd,prev_ssd);
+always @(posedge compare) begin	
+
 	if (ssd < prev_ssd ) begin
 		prev_ssd<=ssd;
 		best_offset<=offset;
-		$display("best offset %d  ",offset);
+		
 	end
 	
 	if (ssd_1 < prev_ssd_1 ) begin
@@ -348,18 +335,15 @@ always @(posedge compare) begin
 	end
 	offsetping<=0;
 	compare<=0;
+	
 end
 
 always@(posedge offsetfound) begin
-	
-
-	//$display("best offset %d col %d  offset %d",ssd,col,offset);	
-	//$display("row %d col %d  offset %d",row,col,offset);
-	DATA_0_L=best_offset*(255/maxoffset);//(org_L[WIDTH * row + col  ]+org_R[WIDTH * row + col  ])/2 ;
-	DATA_1_L =best_offset_1*(255/maxoffset);//(org_L[WIDTH * row + col+1  ]+org_R[WIDTH * row + col+1  ])/2;
+	DATA_0_L=best_offset*(255/maxoffset);
+	DATA_1_L =best_offset_1*(255/maxoffset);
 	//DATA_0_L=(org_L[WIDTH * row + col  ]+org_R[WIDTH * row + col  ])/2 ;
 	//DATA_1_L =(org_L[WIDTH * row + col+1  ]+org_R[WIDTH * row + col+1  ])/2;
-
+	offset <= 4;
 end
 
 
@@ -377,7 +361,7 @@ begin
     end
 end
 assign VSYNC = ctrl_vsync_run;
-assign ctrl_done = (data_count == 308472)? 1'b1: 1'b0; // done flag308472
+assign ctrl_done = (data_count == 308487)? 1'b1: 1'b0; // done flag308472
 //-------------------------------------------------//
 //-------------  Image processing   ---------------//
 //-------------------------------------------------//
