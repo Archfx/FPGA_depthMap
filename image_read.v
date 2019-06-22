@@ -30,8 +30,6 @@ module image_read
     output reg [7:0]  DATA_1_L,				// 8 bit Green data (even)
     output reg [7:0]  DATA_0_R,				// 8 bit Blue data (even)
     output reg [7:0]  DATA_1_R,				// 8 bit Red  data (odd)
-//    output reg [7:0]  DATA_G1,				// 8 bit Green data (odd)
-//    output reg [7:0]  DATA_B1,				// 8 bit Blue data (odd)
 	// Process and transmit 2 pixels in parallel to make the process faster, you can modify to transmit 1 pixels or more if needed
 	output			  ctrl_done					// Done flag
 );			
@@ -72,8 +70,8 @@ integer temp0,temp1;//,tempG0,tempG1,tempB0,tempB1; // temporary variables in co
 integer value,value1,value2,value4;// temporary variables in invert and threshold operation
 reg [ 8:0] row; // row index of the image
 reg [8:0] col; // column index of the Left image
-//localparam [1:0] window = 2'b11;
-//reg [10:0] x,y; // column index of the Right image
+integer window = 7;
+integer x,y; // column index of the Right image
 reg [4:0] offset, best_offset, best_offset_1;
 localparam [4:0] maxoffset = 10; // Maximum extent where to look for the same pixel
 reg offsetfound;
@@ -213,7 +211,6 @@ begin
         row <= 0;
 		  col<= 0;
 		  offset<=4;
-		  //offsetfound<=1;
 		  offsetping<=0;
 		  compare<=0;
 		  
@@ -227,9 +224,7 @@ begin
 					
 				end
 				if(col == WIDTH - 2) begin
-					col <= 0;
-					
-		
+					col <= 0;		
 				end
 				else begin 
 					col <= col + 2; // reading 2 pixels in parallel
@@ -239,20 +234,14 @@ begin
 				prev_ssd <= 65535;
 				best_offset_1 <= 0;
 				prev_ssd_1 <= 65535;
-				
-
 			end
 			else begin
 				if(offset==maxoffset) begin
 					offsetfound <= 1;
 				end
 				else begin
-					
 						offset<=offset+1;
-						
-					
-					$display("row %d col %d  offset %d",row,col,offset);
-					
+					//$display("row %d col %d  offset %d",row,col,offset);
 				end
 				ssd<=0;
 				ssd_1<=0;
@@ -264,8 +253,13 @@ begin
 end
 end
 always@(posedge offsetping) begin
-
-	ssd<=ssd	 
+	for(x=-(window-1)/2; x<((window-1)/2)+1; x=x+1) begin
+			for(y=-(window-1)/2; y<((window-1)/2)+1; y=y+1) begin
+				ssd=ssd+(org_L[(row + x ) * WIDTH + col + y   ]-org_R[(row + x ) * WIDTH + col + y -offset])*(org_L[(row +  x ) * WIDTH + col + y   ]-org_R[(row +  x ) * WIDTH + col + y - offset]);
+				ssd_1=ssd_1+(org_L[(row + x ) * WIDTH + col + y  + 1 ]-org_R[(row + x ) * WIDTH + col + y -offset + 1 ])*(org_L[(row +  x ) * WIDTH + col + y  + 1 ]-org_R[(row +  x ) * WIDTH + col + y - offset + 1 ]);
+			end
+	end
+	/*ssd<=ssd	 
 	+(org_L[(row + -2 ) * WIDTH + col + -2   ]-org_R[(row + -2 ) * WIDTH + col + -2 -offset])*(org_L[(row +  -2 ) * WIDTH + col + -2   ]-org_R[(row +  -2 ) * WIDTH + col + -2 -offset])
 	+(org_L[(row + -2 ) * WIDTH + col + -1   ]-org_R[(row + -2 ) * WIDTH + col + -1 -offset])*(org_L[(row +  -2 ) * WIDTH + col + -1   ]-org_R[(row +  -2 ) * WIDTH + col + -1 -offset])
 	+(org_L[(row + -2 ) * WIDTH + col + 0   ]-org_R[(row + -2 ) * WIDTH + col + 0 -offset])*(org_L[(row +  -2 ) * WIDTH + col + 0   ]-org_R[(row +  -2 ) * WIDTH + col + 0 -offset])
@@ -317,7 +311,7 @@ always@(posedge offsetping) begin
 	+(org_L[(row + 2 ) * WIDTH + col + -1  + 1 ]-org_R[(row + 2 ) * WIDTH + col + -1  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + -1  + 1  ]-org_R[(row +  2 ) * WIDTH + col + -1  - offset + 1])
 	+(org_L[(row + 2 ) * WIDTH + col + 0  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 0  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 0  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 0  - offset + 1])
 	+(org_L[(row + 2 ) * WIDTH + col + 1  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 1  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 1  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 1  - offset + 1])
-	+(org_L[(row + 2 ) * WIDTH + col + 2  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 2  - offset + 1]);
+	+(org_L[(row + 2 ) * WIDTH + col + 2  + 1 ]-org_R[(row + 2 ) * WIDTH + col + 2  - offset + 1 ])*(org_L[(row +  2 ) * WIDTH + col + 2  + 1  ]-org_R[(row +  2 ) * WIDTH + col + 2  - offset + 1]);*/
 	compare<=1;
 end
 
