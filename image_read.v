@@ -1,4 +1,3 @@
-
 /******************************************************************************/
 /******************  Module for reading and processing image     **************/
 /******************************************************************************/
@@ -76,7 +75,7 @@ reg [4:0] offset, best_offset, best_offset_1;
 localparam [4:0] maxoffset = 10; // Maximum extent where to look for the same pixel
 reg offsetfound;
 reg offsetping;
-reg compare;
+reg compare,SSD_calc;
 reg [20:0] ssd, ssd_1; // sum of squared difference
 reg [20:0] prev_ssd, prev_ssd_1;
 reg [18:0] data_count; // data counting for entire pixels of the image
@@ -218,86 +217,58 @@ begin
 	else begin
 		
 		if(ctrl_data_run  ) begin //& offsetping==0 & compare==0
-			if (offsetfound) begin
-				if(col == WIDTH - 2) begin
-					col <= 0;	
-					row <= row + 1;
-				end
-				else begin 
-					col <= col + 2; // reading 2 pixels in parallel
-				end
-				offsetfound <= 0;
-				best_offset <= 0;
-				prev_ssd <= 65535;
-				best_offset_1 <= 0;
-				prev_ssd_1 <= 65535;
-				offset <= 4;
-			end
-			else begin
-				if(offset==maxoffset) begin
-					offsetfound <= 1;
-				end
-				else begin
-						offset<=offset+1;
-					//$display("row %d col %d  offset %d",row,col,offset);
-				end
-				ssd<=0;
-				ssd_1<=0;
-				//offsetping<=1;
-				
-				for(x=-(window-1)/2; x<((window-1)/2)+1; x=x+1) begin
-					for(y=-(window-1)/2; y<((window-1)/2)+1; y=y+1) begin
-						ssd=ssd+(org_L[(row + x ) * WIDTH + col + y   ]-org_R[(row + x ) * WIDTH + col + y -offset])*(org_L[(row +  x ) * WIDTH + col + y   ]-org_R[(row +  x ) * WIDTH + col + y - offset]);
-						ssd_1=ssd_1+(org_L[(row + x ) * WIDTH + col + y  + 1 ]-org_R[(row + x ) * WIDTH + col + y -offset + 1 ])*(org_L[(row +  x ) * WIDTH + col + y  + 1 ]-org_R[(row +  x ) * WIDTH + col + y - offset + 1 ]);
-					end
-				end
+			if (offsetfound==1  ) begin //& offsetping==0
+                        if(col == WIDTH - 2) begin
+                            col <= 0;  	
+                            row <= row + 1;
+                            //data_count<=data_count+"1";
+								end
+                        else  begin
+                            col <= col + 2;
+									 //data_count <= data_count + 1;
+                        end
+                        offsetfound <= 0;
+								best_offset <= 0;
+								prev_ssd <= 65535;
+								best_offset_1 <= 0;
+								prev_ssd_1 <= 65535;
+								offset <= 4;
+						end
+                    else begin
+                        if(offset==maxoffset) begin
+                            offsetfound <= 1;
+									 end
+                        else begin
+                            offset<=offset+1;
+									 x<=0;
+									 y<=0;
+                        end
+                        
+                        offsetping<=1;
+                        
+                        
+                    end
 			
-				if (ssd < prev_ssd ) begin
-					prev_ssd<=ssd;
-					best_offset<=offset;
-					
-				end
-				
-				if (ssd_1 < prev_ssd_1 ) begin
-					prev_ssd_1<=ssd_1;
-					best_offset_1<=offset;
-				end
-				
-				
-			end
-			
-			
+		if (ssd < prev_ssd & SSD_calc==1) begin //& SSD_calc==1 & offsetping==1
+          prev_ssd <= ssd;
+          best_offset <= offset;
+			 //$display("ssd %d prev_ssd %d  offset %d x %d y %d ",ssd,prev_ssd,offset,x,y);
+        end
+		  
+		  if (ssd_1 < prev_ssd_1  & SSD_calc==1) begin //& SSD_calc==1 & offsetping ==1
+          prev_ssd_1 <= ssd_1;
+          best_offset_1 <= offset;
+        end
+        if (SSD_calc==1) begin
+            offsetping<=0;
+        end  	
 			
 			
 		
 	end
 end
 end
-/*always@(posedge offsetping) begin
-	for(x=-(window-1)/2; x<((window-1)/2)+1; x=x+1) begin
-			for(y=-(window-1)/2; y<((window-1)/2)+1; y=y+1) begin
-				ssd=ssd+(org_L[(row + x ) * WIDTH + col + y   ]-org_R[(row + x ) * WIDTH + col + y -offset])*(org_L[(row +  x ) * WIDTH + col + y   ]-org_R[(row +  x ) * WIDTH + col + y - offset]);
-				ssd_1=ssd_1+(org_L[(row + x ) * WIDTH + col + y  + 1 ]-org_R[(row + x ) * WIDTH + col + y -offset + 1 ])*(org_L[(row +  x ) * WIDTH + col + y  + 1 ]-org_R[(row +  x ) * WIDTH + col + y - offset + 1 ]);
-			end
-	end
-	
-	compare<=1;
-end*/
-/*always @(posedge compare) begin	
-	if (ssd < prev_ssd ) begin
-		prev_ssd<=ssd;
-		best_offset<=offset;
-		
-	end
-	
-	if (ssd_1 < prev_ssd_1 ) begin
-		prev_ssd_1<=ssd_1;
-		best_offset_1<=offset;
-	end
-	offsetping<=0;
-	compare<=0;
-	
-end*/
+
 always@(posedge offsetfound) begin
 	DATA_0_L=best_offset*(255/maxoffset);
 	DATA_1_L =best_offset_1*(255/maxoffset);
@@ -314,8 +285,11 @@ begin
         data_count <= 0;
     end
     else begin
-        if(ctrl_data_run)
-			data_count <= data_count + 1;
+        if(ctrl_data_run) begin
+
+				data_count <= data_count + 1;
+
+			end
     end
 end
 assign VSYNC = ctrl_vsync_run;
@@ -337,4 +311,58 @@ always @(*) begin
 		
 	end
 end
+
+
+always @(posedge HCLK) begin
+        SSD_calc<=0;
+        if (offsetping==1) begin
+		//  $display("row %d col %d  offset %d x %d y %d ",row,col,offset,x,y);
+		  
+//            if ((x)<window) begin
+//                if ((y)<window) begin
+////                    ssd <= ssd + std_logic_vector
+////                         (to_unsigned(
+////                         (to_integer(
+////                         unsigned(org_L((to_integer(unsigned(row)) + to_integer(unsigned(x)) -2 ) * WIDTH + to_integer(unsigned(col)) +to_integer(unsigned(y)) -2   )))-to_integer(unsigned(org_R((to_integer(unsigned(row)) +to_integer(unsigned(x))  -2 ) * WIDTH + to_integer(unsigned(col))+to_integer(unsigned(y))  -2 - to_integer(unsigned(offset))))))
+////                         *(to_integer(unsigned(org_L((to_integer(unsigned(row)) +to_integer(unsigned(x))  -2 ) * WIDTH + to_integer(unsigned(col)) +to_integer(unsigned(y)) -2   )))-to_integer(unsigned(org_R((to_integer(unsigned(row)) +to_integer(unsigned(x))  -2 ) * WIDTH + to_integer(unsigned(col)) +to_integer(unsigned(y)) -2 -to_integer(unsigned(offset))))))
+////                         ,ssd'length));
+//							$display("row %d col %d  offset %d x %d y %d ",row,col,offset,x,y);	 
+//							ssd<=ssd+(org_L[(row + x -2) * WIDTH + col + y  -2 ]-org_R[(row + x-2 ) * WIDTH + col + y-2 -offset])*(org_L[(row +  x -2) * WIDTH + col + y-2   ]-org_R[(row +  x-2 ) * WIDTH + col + y -2- offset]);
+//							ssd_1<=ssd_1+(org_L[(row + x -2) * WIDTH + col + y -2 + 1 ]-org_R[(row + x -2) * WIDTH + col + y-2 -offset + 1 ])*(org_L[(row +  x -2) * WIDTH + col + y -2 + 1 ]-org_R[(row +  x -2) * WIDTH + col + y-2 - offset + 1 ]);
+//                    y<=y+1;
+//						end
+//                else begin
+//                    y<=0;
+//                end
+//                if (y==window) begin
+//						x<=x+1;
+//					end 
+//				 end
+//           else begin
+//
+//               if (((x))==window) begin 
+//                x<=0;
+//					 
+					 for(x=-(window-1)/2; x<((window-1)/2)+1; x=x+1) begin
+							for(y=-(window-1)/2; y<((window-1)/2)+1; y=y+1) begin
+								ssd<=ssd+(org_L[(row + x ) * WIDTH + col + y   ]-org_R[(row + x ) * WIDTH + col + y -offset])*(org_L[(row +  x ) * WIDTH + col + y   ]-org_R[(row +  x ) * WIDTH + col + y - offset]);
+								ssd_1<=ssd_1+(org_L[(row + x ) * WIDTH + col + y  + 1 ]-org_R[(row + x ) * WIDTH + col + y -offset + 1 ])*(org_L[(row +  x ) * WIDTH + col + y  + 1 ]-org_R[(row +  x ) * WIDTH + col + y - offset + 1 ]);
+							end
+						end
+                SSD_calc<=1;
+               /*end 
+           end 
+			//end*/
+			end
+        else begin
+            ssd<=0;
+				ssd_1<=0;
+        end
+    end
+//end
+
+
+
+
+
 endmodule
