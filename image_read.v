@@ -267,6 +267,8 @@ end
 always@(posedge offsetfound) begin
 	DATA_0_L=best_offset*(255/maxoffset);
 	DATA_1_L =best_offset_1*(255/maxoffset);
+	//DATA_0_L=(org_L[WIDTH * row + col  ]+org_R[WIDTH * row + col  ])/2 ;
+	//DATA_1_L =(org_L[WIDTH * row + col+1  ]+org_R[WIDTH * row + col+1  ])/2;
 end
 //-------------------------------------------------//
 //----------------Data counting---------- ---------//
