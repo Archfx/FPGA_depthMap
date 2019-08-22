@@ -28,15 +28,32 @@ The python implementation can be found [here](https://github.com/Archfx/FPGA_dep
 Test images used
 For the functional verification I have used most famous stereo image pair "TSukuba" stereo pair
 
- - Tsukuba left image     ![Tsukuba left](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_L.png)
- - Tsukuba right image   ![Tsukuba right](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_R.png)
 
-Python results  ![Colour map generated using python](https://github.com/Archfx/FPGA_depthMap/blob/master/Python_test_implementation/Disparity__colorMap_Tsukuba_5_python.jpg)
+![Tsukuba left](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_L.png)
+Tsukuba left image
+
+
+![Tsukuba right](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_R.png)
+Tsukuba right image   
+
+
+![Colour map generated using python](https://github.com/Archfx/FPGA_depthMap/blob/master/Python_test_implementation/Disparity__colorMap_Tsukuba_5_python.jpg)
+Python results  
+
+
 For this generation it took more than 4 seconds using an average laptop computer without any accelarating techniques.
 Based on the Python implementaion Abstract flow chart is generated as follows.
+
+
 ![Disparity generation Flow chart](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/FlowChart.png)
+
+
 Then this algorithm is direclty ported to verilog. The implementation was done using ISE design suite by Xilinx. The image files were converted to hex and imported to the simulation and the output is directly saved as a Bitmap image.
 
-Timing diagrams at 50MHz
+
 ![Verilog timing diagram](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/VerilogSimulationTime.png)
-Simulation Output![Verilog simulation output](https://github.com/Archfx/FPGA_depthMap/blob/master/output.png)
+Timing diagrams at 50MHz
+
+
+![Verilog simulation output](https://github.com/Archfx/FPGA_depthMap/blob/master/output.png)
+Simulation Output
