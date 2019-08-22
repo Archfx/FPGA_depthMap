@@ -1,4 +1,5 @@
 
+
 # DepthMap generation on FPGA
 
 
@@ -27,6 +28,10 @@ The python implementation can be found [here](https://github.com/Archfx/FPGA_dep
 
 Test images used
 For the functional verification I have used most famous stereo image pair "TSukuba" stereo pair
+| Tsukuba left image | ![Tsukuba left](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_L.png) |
+|--|--|
+| Tsukuba right image | ![Tsukuba right](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_R.png) |
+
 Tsukuba left image
 ![Tsukuba left](https://github.com/Archfx/FPGA_depthMap/blob/master/Img/Tsukuba_L.png)
 
