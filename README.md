@@ -221,5 +221,4 @@ Basys 3 is a entry level FPGA board. Hence it is not designed for image processi
   </tr>
 </table>
 
-</p>
 
